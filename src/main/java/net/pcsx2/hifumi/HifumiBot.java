@@ -138,20 +138,14 @@ public class HifumiBot {
             Messaging.logException("HifumiBot", "(constructor)", e);
         }
 
-        Log.info("Setting status to Starting...");
-        updateStatus("Starting...");
-
-        // Load configurations. Main config file is essential, if something goes wrong,
-        // leave its exception unhandled so the constructor will halt.
-        //
-        // After loading any config, write it back immediately so that if any new fields
-        // were added after an update, they are written to disk
-        Log.info("Initializing main config");
-        ConfigManager.createConfigIfNotExists(ConfigType.CORE);
-        config = (Config) ConfigManager.read(ConfigType.CORE);
-        ConfigManager.write(config);
 
         try {
+        	updateStatus("Loading configs...");
+        	Log.info("Initializing main config");
+            ConfigManager.createConfigIfNotExists(ConfigType.CORE);
+            config = (Config) ConfigManager.read(ConfigType.CORE);
+            ConfigManager.write(config);
+        	
             Log.info("Initializing dyncmd config");
             ConfigManager.createConfigIfNotExists(ConfigType.DYNCMD);
             dynCmdConfig = (DynCmdConfig) ConfigManager.read(ConfigType.DYNCMD);
@@ -166,68 +160,70 @@ public class HifumiBot {
             ConfigManager.createConfigIfNotExists(ConfigType.SETTINGS_PARSER);
             settingsIniParserConfig = (SettingsIniParserConfig) ConfigManager.read(ConfigType.SETTINGS_PARSER);
             ConfigManager.write(settingsIniParserConfig);
+            
+            updateStatus("Initializing subsystems...");
+            Log.info("Calling constructors");
+            sqlite = new SQLite(dataDirectory);
+            deepL = new Translator(deepLKey);
+            scheduler = new Scheduler();
+            cpuIndex = new CpuIndex();
+            gpuIndex = new GpuIndex();
+            commandIndex = new CommandIndex();
+            permissionManager = new PermissionManager(superuserId);
+            jda.addEventListener(new RoleEventListener());
+            jda.addEventListener(new MessageEventListener());
+            jda.addEventListener(new MemberEventListener());
+            jda.addEventListener(new UserEventListener());
+            jda.addEventListener(new ButtonEventListener());
+            jda.addEventListener(new SelectMenuEventListener());
+            jda.addEventListener(new SlashCommandListener());
+            jda.addEventListener(new MessageContextCommandListener());
+            jda.addEventListener(new ModalEventListener());
+            jda.addEventListener(new AutoModEventListener());
+            gameIndex = new GameIndex();
+
+            updateStatus("Scheduling tasks...");
+            Log.info("Refreshing anything refreshable");
+            scheduler.runOnce(() -> {
+                cpuIndex.refresh();
+                gpuIndex.refresh();
+                gameIndex.refresh();
+            });
+
+            // Schedule repeating tasks
+            Log.info("Scheduling repeating tasks");
+
+            scheduler.scheduleRepeating("cpu", () -> {
+                HifumiBot.getSelf().getCpuIndex().refresh();
+            }, 1000 * 60 * 60 * 24);
+
+            scheduler.scheduleRepeating("gpu", () -> {
+                HifumiBot.getSelf().getGpuIndex().refresh();
+            }, 1000 * 60 * 60 * 24);
+            
+            scheduler.scheduleRepeating("gdb", () -> {
+                HifumiBot.getSelf().getGameIndex().refresh();
+            }, 1000 * 60 * 60 * 4);
+
+            scheduler.scheduleRepeating("beb", () -> {
+                Instant currentTime = Instant.now();
+
+                for (Long eventIdLong : BrowsableEmbed.embedCache.keySet()) {
+                    BrowsableEmbed embed = BrowsableEmbed.embedCache.get(eventIdLong);
+                    Instant createdTime = Instant.ofEpochSecond(embed.getCreatedTimestamp());
+
+                    if (Duration.between(createdTime, currentTime).toHours() > 6) {
+                        BrowsableEmbed.embedCache.remove(eventIdLong);
+                    }
+                }
+            }, 1000 * 60 * 60 * 6);
+
+            Log.info("Setting status to New Game!");
+            updateStatus("New Game!");
         } catch (Exception e) {
             Log.error(e);
             Messaging.logException("HifumiBot", "(constructor)", e);
         }
-        
-        Log.info("Calling constructors");
-        sqlite = new SQLite(dataDirectory);
-        deepL = new Translator(deepLKey);
-        scheduler = new Scheduler();
-        cpuIndex = new CpuIndex();
-        gpuIndex = new GpuIndex();
-        commandIndex = new CommandIndex();
-        permissionManager = new PermissionManager(superuserId);
-        jda.addEventListener(new RoleEventListener());
-        jda.addEventListener(new MessageEventListener());
-        jda.addEventListener(new MemberEventListener());
-        jda.addEventListener(new UserEventListener());
-        jda.addEventListener(new ButtonEventListener());
-        jda.addEventListener(new SelectMenuEventListener());
-        jda.addEventListener(new SlashCommandListener());
-        jda.addEventListener(new MessageContextCommandListener());
-        jda.addEventListener(new ModalEventListener());
-        jda.addEventListener(new AutoModEventListener());
-        gameIndex = new GameIndex();
-
-        Log.info("Refreshing anything refreshable");
-        scheduler.runOnce(() -> {
-            cpuIndex.refresh();
-            gpuIndex.refresh();
-            gameIndex.refresh();
-        });
-
-        // Schedule repeating tasks
-        Log.info("Scheduling repeating tasks");
-
-        scheduler.scheduleRepeating("cpu", () -> {
-            HifumiBot.getSelf().getCpuIndex().refresh();
-        }, 1000 * 60 * 60 * 24);
-
-        scheduler.scheduleRepeating("gpu", () -> {
-            HifumiBot.getSelf().getGpuIndex().refresh();
-        }, 1000 * 60 * 60 * 24);
-        
-        scheduler.scheduleRepeating("gdb", () -> {
-            HifumiBot.getSelf().getGameIndex().refresh();
-        }, 1000 * 60 * 60 * 4);
-
-        scheduler.scheduleRepeating("beb", () -> {
-            Instant currentTime = Instant.now();
-
-            for (Long eventIdLong : BrowsableEmbed.embedCache.keySet()) {
-                BrowsableEmbed embed = BrowsableEmbed.embedCache.get(eventIdLong);
-                Instant createdTime = Instant.ofEpochSecond(embed.getCreatedTimestamp());
-
-                if (Duration.between(createdTime, currentTime).toHours() > 6) {
-                    BrowsableEmbed.embedCache.remove(eventIdLong);
-                }
-            }
-        }, 1000 * 60 * 60 * 6);
-
-        Log.info("Setting status to New Game!");
-        updateStatus("New Game!");
     }
 
     public Config getConfig() {
