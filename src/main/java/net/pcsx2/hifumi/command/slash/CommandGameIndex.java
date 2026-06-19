@@ -74,6 +74,7 @@ public class CommandGameIndex extends AbstractSlashCommand {
             Map<String, Object> mainGameIndexMap = HifumiBot.getSelf().getGameIndex().getMap();
 
             for (String serial : mainGameIndexMap.keySet()) {
+                @SuppressWarnings("unchecked")
                 Map<String, Object> gameEntry = (Map<String, Object>) mainGameIndexMap.get(serial);
                 String name = (String) gameEntry.get("name");            
                 Integer nameScore = fuzz.fuzzyScore(normalized, name.toUpperCase());
@@ -148,6 +149,7 @@ public class CommandGameIndex extends AbstractSlashCommand {
             StringSelectMenu.Builder selectMenu = StringSelectMenu.create("gameindex:select:" + event.getId() + ":" + event.getUser().getId());
             
             for (String serial : sortedHighScores.keySet()) {
+                @SuppressWarnings("unchecked")
                 Map<String, Object> gameEntry = (Map<String, Object>) mainGameIndexMap.get(serial);
                 String label = serial + " / ";
 
