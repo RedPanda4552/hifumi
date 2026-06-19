@@ -5,7 +5,7 @@ package net.pcsx2.hifumi;
 import java.time.Duration;
 import java.time.Instant;
 
-import com.deepl.api.Translator;
+import com.deepl.api.DeepLClient;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -90,7 +90,7 @@ public class HifumiBot {
     private PermissionManager permissionManager;
     
     private GameIndex gameIndex;
-    private Translator deepL;
+    private DeepLClient deepL;
 
     public HifumiBot() {
         self = this;
@@ -144,7 +144,7 @@ public class HifumiBot {
             updateStatus("Initializing subsystems...");
             Log.info("Calling constructors");
             sqlite = new SQLite(dataDirectory);
-            deepL = new Translator(deepLKey);
+            deepL = new DeepLClient(deepLKey);
             scheduler = new Scheduler();
             cpuIndex = new CpuIndex();
             gpuIndex = new GpuIndex();
@@ -262,7 +262,7 @@ public class HifumiBot {
         return gameIndex;
     }
     
-    public Translator getDeepL() {
+    public DeepLClient getDeepL() {
         return deepL;
     }
 
