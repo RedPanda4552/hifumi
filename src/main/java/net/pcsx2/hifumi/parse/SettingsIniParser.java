@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 package net.pcsx2.hifumi.parse;
 
+import static java.util.stream.Collectors.toMap;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -10,21 +12,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import static java.util.stream.Collectors.toMap;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.WordUtils;
 import org.ini4j.Ini;
 
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.Message.Attachment;
 import net.pcsx2.hifumi.HifumiBot;
 import net.pcsx2.hifumi.config.SettingsIniParserConfig.Rule;
 import net.pcsx2.hifumi.config.SettingsIniParserConfig.Section;
 import net.pcsx2.hifumi.config.SettingsIniParserConfig.Setting;
 import net.pcsx2.hifumi.util.Messaging;
-
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.Message.Attachment;
 
 public class SettingsIniParser extends AbstractParser {
     
